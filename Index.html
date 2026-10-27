@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Controle Interno</title>
+  
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
+  <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
+
+  <style>
+    /* ==========================================
+       VARIÁVEIS GERAIS (CSS MELHORADO)
+       ========================================== */
+    :root {
+      --primary: #ff4c4c;
+      --primary-hover: #f44336;
+      --primary-muted: rgba(255, 76, 76, 0.15);
+      --bg-body: #121212;
+      --bg-box: #1e1e1e;
+      --bg-input: #262626;
+      --bg-input-hover: #2a2a2a;
+      --border-color: #333;
+      --border-focus: #444;
+      --text-main: #f1f1f1;
+      --text-muted: #aaa;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-body); }
+    ::-webkit-scrollbar-thumb { background: var(--border-focus); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+    /* LAYOUT BASE */
+    .banner-topo { width: 100%; display: flex; justify-content: center; background: #1a1a1a; border-bottom: 2px solid var(--border-color); margin-bottom: 25px;}
+    .banner-topo img { width: 100%; max-width: 100%; height: auto; display: block;}
+    .container { width: 100%; max-width: 1300px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; padding: 0 20px 50px 20px;}
+
+    /* TELA DE LOGIN */
+    .login-wrapper { position: fixed; inset: 0; background: rgba(18,18,18,0.95); display: flex; justify-content: center; align-items: center; z-index: 5000; backdrop-filter: blur(10px);}
+    .login-box { background: var(--bg-box); padding: 50px; border-radius: 12px; width: 90%; max-width: 450px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 15px 40px rgba(0,0,0,0.6);}
+    
+    /* INPUTS & FORMS */
+    label { font-size: 0.85rem; font-weight: 700; color: #ccc; margin-bottom: 8px; text-transform: uppercase; display: block;}
+    input, select, textarea { width: 100%; background: var(--bg-input); border: 1px solid var(--border-focus); color: #fff; padding: 14px 16px; border-radius: 8px; font-size: 0.95rem; transition: 0.3s; outline: none;}
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); background: var(--bg-input-hover); box-shadow: 0 0 0 3px var(--primary-muted); }
+    textarea { resize: vertical; min-height: 90px;}
+    
+    .form-box { background: var(--bg-box); padding: 40px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); width: 100%; max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; border: 1px solid var(--border-color);}
+    .form-box.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .form-group.full { grid-column: 1 / -1; }
+
+    /* BOTÕES (DRY - Simplificado) */
+    .btn { padding: 12px 25px; font-size: 1rem; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.3s; outline: none; border: none; text-transform: uppercase; display: inline-flex; justify-content: center; align-items: center;}
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important;}
+    .btn:hover:not(:disabled) { transform: translateY(-2px); }
+    
+    .btn-primary { background: var(--primary); color: white; width: 100%;}
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); box-shadow: 0 5px 20px var(--primary-muted);}
+    
+    .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); width: 100%;}
+    .btn-outline:hover:not(:disabled) { background: var(--primary-muted); }
+    
+    .btn-danger-outline { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; font-size: 0.8rem;}
+    .btn-danger-outline:hover { background: rgba(239, 68, 68, 0.15); }
+
+    /* BARRA DE USUÁRIO E ABAS */
+    .user-bar { display: none; width: 100%; max-width: 1100px; justify-content: flex-end; align-items: center; margin-bottom: 20px; font-size: 0.95rem; color: var(--text-muted);}
+    .user-badge { background: var(--primary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-left: 10px; font-weight: bold; text-transform: uppercase;}
+    
+    .tabs { display: none; justify-content: center; gap: 20px; border-bottom: 1px solid var(--border-color); width: 100%; padding-bottom: 0; margin-bottom: 35px; flex-wrap: wrap;}
+    .tab-btn { background: transparent; border: none; color: #888; font-size: 1.05rem; font-weight: 600; padding: 12px 10px; cursor: pointer; transition: 0.3s; position: relative;}
+    .tab-btn:hover, .tab-btn.active { color: var(--primary); }
+    .tab-btn.active::after { content: ""; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px; background: var(--primary); }
+
+    .tab-content { display: none; width: 100%; animation: fade 0.4s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* LISTAS E CARDS */
+    .manage-section { margin-top: 40px; background: var(--bg-box); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 1100px; margin: 40px auto 0;}
+    .manage-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;}
+    .data-list { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 5px;}
+    .data-item { background: var(--bg-input); border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;}
+
+    /* MODAL E TOAST */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); padding: 20px;}
+    .modal-content { background: var(--bg-box); padding: 35px; border-radius: 12px; width: 100%; max-width: 650px; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto;}
+    
+    #toast { position: fixed; bottom: 30px; right: 30px; background: var(--success); color: white; padding: 16px 25px; border-radius: 8px; font-weight: 600; font-size: 1rem; transform: translateX(120%); transition: 0.4s; z-index: 9999; display: flex; align-items: center; gap: 10px;}
+    #toast.show { transform: translateX(0); }
+    #toast.error { background: var(--danger); }
+
+    /* TOM SELECT CORREÇÕES */
+    .ts-control { background: var(--bg-input) !important; border: 1px solid var(--border-focus) !important; color: #fff !important; padding: 14px 16px !important; border-radius: 8px !important;}
+    .ts-control.focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px var(--primary-muted) !important;}
+    .ts-control > input { color: #fff !important; }
+    .ts-dropdown { background: var(--bg-input) !important; border: 1px solid var(--border-focus) !important; color: #fff !important; }
+    .ts-dropdown .option:hover, .ts-dropdown .active { background: var(--primary) !important; color: #fff !important; }
+
+    /* TABELAS / ESPELHO */
+    .mirror-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+    .mirror-table th, .mirror-table td { border: 1px solid var(--border-focus); padding: 12px; font-size: 0.95rem; text-align: left; }
+    .mirror-table th { background: var(--bg-input-hover); color: var(--primary); width: 35%; text-transform: uppercase;}
+
+    /* CHECKBOX PERMISSÕES */
+    .chk-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;}
+    .chk-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #ccc;}
+    .chk-item input { width: auto; transform: scale(1.2);}
+
+    @media (max-width: 768px) { .form-box { grid-template-columns: 1fr; } .chk-group { grid-template-columns: 1fr;} }
+
+.ql-toolbar.ql-snow { background: #e2e8f0; border-radius: 8px 8px 0 0; border: 1px solid var(--border-focus); }
+    .ql-container.ql-snow { border: 1px solid var(--border-focus); border-radius: 0 0 8px 8px; border-top: none; }
+    .ql-editor { min-height: 250px; color: #fff; font-size: 0.95rem; font-family: 'Segoe UI', sans-serif; }
+    .ql-editor p, .ql-editor ol, .ql-editor ul { margin-bottom: 10px; }
+    /* Ajuste para exibição na lista final */
+    .proc-conteudo-exibicao .ql-editor { padding: 0; min-height: auto; overflow-y: hidden; }
+
+    /* Spinner CSS */
+    .spinner { border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Skeleton CSS (Animação de Carregamento) */
+    .skeleton { background: linear-gradient(90deg, var(--bg-input) 25%, var(--border-focus) 50%, var(--bg-input) 75%); background-size: 200% 100%; animation: skeletonLoading 1.5s infinite; border-radius: 4px; min-height: 25px; margin-bottom: 10px;}
+    @keyframes skeletonLoading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Botão Desfazer Toast */
+    .btn-undo { background: rgba(0,0,0,0.3); border: 1px solid #fff; color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; margin-left: 15px; transition: 0.3s; font-weight: bold;}
+    .btn-undo:hover { background: #fff; color: var(--danger); }
+
+    /* Estilos Datatables (Sobrescrita para Tema Escuro) */
+    .dataTable-wrapper { color: #ccc; margin-top: 15px;}
+    .dataTable-selector, .dataTable-input { background: var(--bg-input); border: 1px solid var(--border-focus); color: #fff; border-radius: 4px; padding: 6px 12px; }
+    .dataTable-table > thead > tr > th { border-bottom: 2px solid var(--primary) !important; color: #fff; padding-bottom: 10px; }
+    .dataTable-table > tbody > tr > td { border-bottom: 1px solid var(--border-focus) !important; padding: 12px 10px;}
+    .dataTable-pagination a { color: #ccc; transition: 0.3s; }
+    .dataTable-pagination .active a, .dataTable-pagination a:hover { background: var(--primary) !important; color: white !important; }
+
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div class="login-wrapper" id="login-screen">
+    <div class="login-box">
+      <div style="font-size: 3.5rem; margin-bottom: 15px;">🛡️</div>
+      <h2 style="color:#fff; margin-bottom: 25px;">Controle Interno</h2>
+      <input type="text" id="login-user" placeholder="Usuário" style="margin-bottom: 15px;">
+      <input type="password" id="login-pass" placeholder="Senha" style="margin-bottom: 25px;">
+      <button class="btn btn-primary" id="btn-login" onclick="executarLogin()">Acessar Sistema</button>
+    </div>
+  </div>
+
+  <div class="banner-topo">
+    <img src="https://i.ibb.co/LhnqQS9K/BANNER-CONTROLE-INTERNO.png" alt="Banner" />
+  </div>
+
+  <div class="container">
+    
+    <div class="user-bar" id="user-bar">
+      Logado como: <strong id="nome-logado" style="color:var(--success); margin-left: 8px;"></strong>
+      <span class="user-badge" id="badge-nivel"></span>
+      <button class="btn-outline" style="width:auto; padding: 5px 12px; margin-left: 15px; border-color:var(--border-focus); color:#aaa;" onclick="fazerLogout()">Sair</button>
+    </div>
+
+    <!-- TABS GERADOS DINAMICAMENTE PELO JS -->
+    <nav class="tabs" id="nav-tabs"></nav>
+
+    <!-- ==========================================
+         TAB 1: REEMBOLSO
+         ========================================== -->
+    <section id="tab-reembolso" class="tab-content">
+      <form id="form-reembolso" class="form-box">
+        <div class="form-group"><label>Pedido</label><input type="text" name="pedido" required></div>
+        <div class="form-group"><label>CC</label><input type="text" name="cc"></div>
+        <div class="form-group"><label>NF</label><input type="text" name="nf"></div>
+        <div class="form-group"><label>DEV</label><input type="text" name="dev"></div>
+        <div class="form-group"><label>Ticket</label><input type="text" name="ticket"></div>
+        <div class="form-group"><label>Nome do Cliente</label><input type="text" name="nome"></div>
+        <div class="form-group"><label>Valor Total</label><input type="text" name="valorTotal" class="input-money" placeholder="0,00" required></div>
+        <div class="form-group"><label>Forma de Pagamento</label>
+          <select name="formaPagamento" required>
+            <option value="">-- selecione --</option><option value="Boleto">Boleto</option><option value="Cartão">Cartão</option><option value="Pix">Pix</option><option value="Pix + Cartão">Pix + Cartão</option><option value="Nubank">Nubank</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Condição do Produto</label>
+          <select name="condicaoProduto" required>
+            <option value="">-- selecione --</option><option value="ABERTO">ABERTO</option><option value="LACRADO">LACRADO</option><option value="BARRADO">BARRADO</option><option value="CANCELADO">CANCELADO</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Motivo Geral</label>
+          <select name="motivoGeral" required>
+            <option value="">-- selecione --</option><option value="Desistencia">Desistencia</option><option value="Falta de Estoque">Falta de Estoque</option><option value="Erro de parcelamento">Erro de parcelamento/Endereço</option><option value="Fraude">Fraude</option><option value="Atraso na entrega">Atraso na entrega</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Motivo Específico</label>
+          <select id="motivo-reembolso" name="motivo" required placeholder="Digite ou selecione o motivo exato...">
+            <option value="">Selecione um motivo...</option>
+            <option value="Cliente comprou modelo errado e solicitou o estorno">Cliente comprou modelo errado e solicitou o estorno</option>
+            <option value="Produto não atendeu o cliente e o mesmo solicitou estorno">Produto não atendeu o cliente e o mesmo solicitou estorno</option>
+            <option value="Cliente se arrependeu dentro do prazo dos 7 dias e solicitou estorno">Cliente se arrependeu dentro do prazo dos 7 dias e solicitou estorno</option>
+            <option value="Cliente optou por outro modelo/marca/produto e solicitou estorno">Cliente optou por outro modelo/marca/produto e solicitou estorno</option>
+            <option value="Devido a problemas com a transportadora o cliente optou pelo estorno">Devido a problemas com a transportadora o cliente optou pelo estorno</option>
+            <option value="Entrega do pedido atrasou e cliente optou por estorno">Entrega do pedido atrasou e cliente optou por estorno</option>
+            <option value="Pedido do cliente gerou pendência no estoque e o mesmo optou pelo estorno">Pedido do cliente gerou pendência no estoque e o mesmo optou pelo estorno</option>
+            <option value="Valor do produto alterou após a finalização da compra e o cliente optou pelo estorno">Valor do produto alterou após a finalização da compra e o cliente optou pelo estorno</option>
+            <option value="Cliente comprou item de pré venda e não se atentou ao prazo de envio e optou pelo estorno">Cliente comprou item de pré venda e não se atentou ao prazo de envio e optou pelo estorno</option>
+            <option value="Cliente comprou item incompatível com a configuração que ele possui, solicitou estorno">Cliente comprou item incompatível com a configuração que ele possui, solicitou estorno</option>
+            <option value="Cliente encontrou outro modelo em outra loja, solicitou estorno">Cliente encontrou outro modelo em outra loja, solicitou estorno</option>
+            <option value="Cliente comprou mesmo modelo via Marketplace, dessa forma solicitou estorno">Cliente comprou mesmo modelo via Marketplace, dessa forma solicitou estorno</option>
+            <option value="Cliente desistiu da compra por motivos pessoais, dessa forma solicitou estorno">Cliente desistiu da compra por motivos pessoais, dessa forma solicitou estorno</option>
+            <option value="Cliente deseja parcelar e passou o cartão 1x, dessa forma solicitou estorno para recomprar em mais vezes">Cliente deseja parcelar e passou o cartão 1x, dessa forma solicitou estorno para recomprar em mais vezes</option>
+            <option value="Cliente consta com CPF invalidado, e não deu retorno">Cliente consta com CPF invalidado, e não deu retorno</option>
+            <option value="Cliente consta com CNPJ invalidado, e não deu retorno">Cliente consta com CNPJ invalidado, e não deu retorno</option>
+            <option value="Cliente pesquisou sobre o produto desisitiu da compra">Cliente pesquisou sobre o produto desisitiu da compra</option>
+            <option value="Cliente se mudou após a compra e deseja estorno para refazer a compra no endereço correto">Cliente se mudou após a compra e deseja estorno para refazer a compra no endereço correto</option>
+            <option value="Cliente comprou sem querer, por impulso, solicitou estorno">Cliente comprou sem querer, por impulso, solicitou estorno</option>
+            <option value="Cliente comprou com cartão errado, deseja estorno para refazer a compra">Cliente comprou com cartão errado, deseja estorno para refazer a compra</option>
+            <option value="Menor de idade comprou sem permissão e responsável adulto solicitou estorno">Menor de idade comprou sem permissão e responsável adulto solicitou estorno</option>
+            <option value="Cliente comprou durante a live e deseja estorno">Cliente comprou durante a live e deseja estorno</option>
+            <option value="Cliente ganhou o item de presente não havendo mais a necessidade da compra">Cliente ganhou o item de presente não havendo mais a necessidade da compra</option>
+            <option value="Cliente deseja alterar a forma de pagamento">Cliente deseja alterar a forma de pagamento</option>
+            <option value="Produto apresentou defeito e no processo de RMA o cliente comprou outro">Produto apresentou defeito e no processo de RMA o cliente comprou outro</option>
+            <option value="Produto não atenderá mais o cliente e o mesmo deseja estorno, não precisa mais do item">Produto não atenderá mais o cliente e o mesmo deseja estorno, não precisa mais do item</option>
+            <option value="Cliente comprou duplicado e deseja o estorno">Cliente comprou duplicado e deseja o estorno</option>
+            <option value="Cliente usou o nubank e parcelou gerando muito juros, solicitou estorno">Cliente usou o nubank e parcelou gerando muito juros, solicitou estorno</option>
+            <option value="Pedido finalizou com valor normal, sem promoção, dessa forma cliente quer estorno">Pedido finalizou com valor normal, sem promoção, dessa forma cliente quer estorno</option>
+            <option value="Cliente errou o endereço, ou deseja alterar o endereço">Cliente errou o endereço, ou deseja alterar o endereço</option>
+            <option value="Cliente apenas desistiu da compra e solicitou o estorno, sem detalhes do motivo">Cliente apenas desistiu da compra e solicitou o estorno, sem detalhes do motivo</option>
+            <option value="Cliente comprou o produto errado e deseja o estorno">Cliente comprou o produto errado e deseja o estorno</option>
+            <option value="Cliente errou forma de pagamento e solicitou cancelamento para comprar no método correto">Cliente errou forma de pagamento e solicitou cancelamento para comprar no método correto</option>
+            <option value="Transportadora não atende no endereço cadastrado ou não encontrou o endereço para entrega e produto voltou">Transportadora não atende no endereço cadastrado ou não encontrou o endereço para entrega e produto voltou</option>
+            <option value="Cliente desistiu da compra pois comprou por um valor menor">Cliente desistiu da compra pois comprou por um valor menor</option>
+            <option value="Cliente solicitou troca/inclusão ou retirada e no meio do processo desistiu e deseja estorno">Cliente solicitou troca/inclusão ou retirada e no meio do processo desistiu e deseja estorno</option>
+            <option value="Cliente deseja estorno pois quer comprar em outro momento quando tiver um valor maior">Cliente deseja estorno pois quer comprar em outro momento quando tiver um valor maior</option>
+            <option value="Cliente desistiu da compra pois estava em processo de separação e não se atentou ao prazo de envio">Cliente desistiu da compra pois estava em processo de separação e não se atentou ao prazo de envio</option>
+            <option value="Cliente recusou a entrega do pedido">Cliente recusou a entrega do pedido</option>
+            <option value="Cliente comprou errado e já realizou a recompra do modelo correto">Cliente comprou errado e já realizou a recompra do modelo correto</option>
+            <option value="Cliente não vai estar em casa para receber e solicitou devolução em trânsito">Cliente não vai estar em casa para receber e solicitou devolução em trânsito</option>
+            <option value="O cliente alega que a compra foi realizada por terceiros sem nenhum consentimento">O cliente alega que a compra foi realizada por terceiros sem nenhum consentimento</option>
+            <option value="Produto não atingiu a expectativa do cliente, solicitou estorno">Produto não atingiu a expectativa do cliente, solicitou estorno</option>
+            <option value="Cliente desistiu da compra por motivos financeiros, dessa forma solicitou o estorno">Cliente desistiu da compra por motivos financeiros, dessa forma solicitou o estorno</option>
+            <option value="Cliente realizou compra com CNPJ incorreto, solicita estorno para a recompra">Cliente realizou compra com CNPJ incorreto, solicita estorno para a recompra</option>
+            <option value="Cliente informou que teve problemas em casa, solicitou o estorno do valor">Cliente informou que teve problemas em casa, solicitou o estorno do valor</option>
+            <option value="Cliente deseja o estorno pois o prazo de entrega não lhe atendia">Cliente deseja o estorno pois o prazo de entrega não lhe atendia</option>
+            <option value="Pedido atrasou em separação e cliente não deseja aguardar, solicita o estorno do valor">Pedido atrasou em separação e cliente não deseja aguardar, solicita o estorno do valor</option>
+            <option value="Cliente pagou utilizando Nubank e não recebeu desconto por Pix, deseja o estorno para recomprar">Cliente pagou utilizando Nubank e não recebeu desconto por Pix, deseja o estorno para recomprar</option>
+            <option value="Cliente consta com CPF invalidado, e não deu retorno">Cliente consta com CPF invalidado, e não deu retorno</option>
+            <option value="Cliente recebeu caixa com avaria e optou pela devolução e estorno">Cliente recebeu caixa com avaria e optou pela devolução e estorno</option>
+            <option value="Trocas de etiqueta">Trocas de etiqueta</option>
+            <option value="Cliente recebeu produto errado e solicitou estorno">Cliente recebeu produto errado e solicitou estorno</option>
+            <option value="Disparate - Utilizado BOT na live">Disparate - Utilizado BOT na live</option>
+            <option value="Cliente realizou a compra em CNPJ e vai refazer em CPF">Cliente realizou a compra em CNPJ e vai refazer em CPF</option>
+            <option value="Cliente realizou a compra em CPF e vai refazer em CNPJ">Cliente realizou a compra em CPF e vai refazer em CNPJ</option>
+            <option value="O CNPJ está com o endereço de entrega divergente da sede da empresa">O CNPJ está com o endereço de entrega divergente da sede da empresa</option>
+            <option value="Cliente refez a compra no cartão">Cliente refez a compra no cartão</option>
+            <option value="Cliente desistiu da compra por conta do valor do frete">Cliente desistiu da compra por conta do valor do frete</option>
+            <option value="Cliente queria efetuara troca porém produto de interesse estava sem estoque">Cliente queria efetuara troca porém produto de interesse estava sem estoque</option>
+            <option value="Sem estoque para reenvio">Sem estoque para reenvio</option>
+            <option value="Pedido dentro do prazo de separação, cliente não quis aguardar e solicitou estorno">Pedido dentro do prazo de separação, cliente não quis aguardar e solicitou estorno</option>
+            <option value="Cliente do cliente desistiu da compra">Cliente do cliente desistiu da compra</option>
+          </select>
+        </div>
+        <div class="form-group full" style="border-top: 1px dashed var(--border-focus); padding-top: 15px;">
+          <label style="color:var(--primary);">Dados Bancários (Opcional - PJ)</label>
+          <textarea name="dadosBancarios" rows="2"></textarea>
+        </div>
+        <div class="form-group full">
+          <label style="color:var(--primary);">Anexar Nota Fiscal (Opcional - Limite 4MB)</label>
+          <input type="file" id="anexoNf" accept=".pdf,image/*" style="padding:10px; background:var(--bg-box);">
+        </div>
+        <div class="form-group full">
+          <button type="button" id="btn-gravar-reembolso" class="btn btn-primary" onclick="prepararUpload(this)">Gravar Reembolso</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ==========================================
+         TAB 2: REVERTIDOS
+         ========================================== -->
+    <section id="tab-revertido" class="tab-content">
+      <form id="form-revertido" class="form-box">
+        <div class="form-group"><label>Tipo</label><select name="tipo" required><option value="">-- selecione --</option><option value="Devolução">Devolução</option><option value="Cancelamento">Cancelamento</option><option value="Trocas">Trocas</option></select></div>
+        <div class="form-group"><label>Pedido</label><input type="text" name="pedido" required></div>
+        <div class="form-group"><label>Ticket</label><input type="text" name="ticket"></div>
+        <div class="form-group"><label>Solicitação</label><select name="solicitacao" required><option value="">-- selecione --</option><option value="Desistencia">Desistencia</option><option value="Falta de Estoque">Falta de Estoque</option><option value="Erro de parcelamento/Endereço">Erro de parcelamento/Endereço</option><option value="Fraude">Fraude</option><option value="Atraso na entrega">Atraso na entrega</option><option value="Contestação">Contestação</option><option value="Montagem">Montagem</option><option value="Correção">Correção</option></select></div>
+        <div class="form-group"><label>Tipo de Reversão</label><select name="tipoReversao" required><option value="">-- selecione --</option><option value="Crédito em site">Crédito em site</option><option value="Revertido">Revertido</option></select></div>
+        <div class="form-group full"><label>Valor</label><input type="text" name="valor" class="input-money" placeholder="0,00" required></div>
+        <div class="form-group full"><label>Observação</label><textarea name="observacao" rows="2"></textarea></div>
+        <div class="form-group full"><button type="button" class="btn btn-primary" onclick="submitRevertido(this)">Gravar Revertido</button></div>
+      </form>
+
+      <div class="manage-section">
+        <div class="manage-header">
+          <h3 style="color:#fff;">🔎 Suas Reversões do Mês</h3>
+          <input type="text" id="search-rev" placeholder="Buscar pedido..." onkeyup="filtrarReversoes()" style="max-width: 300px;">
+        </div>
+        <div class="data-list" id="rev-list-container"></div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 3: BLOQUEIO TRANSPORTE
+         ========================================== -->
+    <section id="tab-bloqueio" class="tab-content">
+<form id="form-bloqueio" class="form-box cols-3">
+        <div class="form-group"><label>Transportadora</label><select id="f-transportadora" name="transportadora" required></select></div>
+        <div class="form-group"><label>Número da NF</label><input type="text" name="nf" required></div>
+        <div class="form-group"><label>Ticket</label><input type="text" name="ticket" required></div>
+        
+        <div class="form-group full">
+          <label style="color:var(--primary);">Anexar NF de Remessa (Obrigatório - Limite 4MB)</label>
+          <input type="file" id="anexoNfRemessa" accept=".pdf,image/*" style="padding:10px; background:var(--bg-box);" required>
+        </div>
+
+        <div class="form-group full"><button type="button" class="btn btn-primary" onclick="submitBloqueioTransporte(this)">Enviar E-mail de Bloqueio</button></div>
+      </form>
+
+      <div class="manage-section">
+        <div class="manage-header"><h3 style="color:#fff;">📋 Histórico de Bloqueios</h3></div>
+        <div class="data-list" id="barrados-list-container"></div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 4: PROCEDIMENTOS
+         ========================================== -->
+<section id="tab-procedimentos" class="tab-content">
+      
+      <div style="max-width:1100px; margin: 0 auto 30px auto; background: var(--bg-box); padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        <h3 style="color:#fff; font-size:1.3rem; margin-bottom: 15px;">🧮 Cálculo Personalizado Cartão</h3>
+        <div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+          <div class="form-group" style="flex:1;">
+            <label>Valor de PIX</label>
+            <input type="text" id="calc-pix" class="input-money" placeholder="0,00" oninput="calcularCartao()">
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Valor de Cartão</label>
+            <input type="text" id="calc-cartao" placeholder="R$ 0,00" readonly style="background: var(--bg-body); cursor: not-allowed; color: var(--primary); font-weight: bold; border-color: var(--border-color);">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:15px; margin-bottom:20px; max-width:1100px; margin: 0 auto 20px;">
+        <input type="text" id="search-proc" placeholder="Pesquisar procedimentos..." onkeyup="filtrarProcedimentos()" style="flex:1;">
+        <button id="btn-novo-proc" class="btn btn-primary" style="width:auto; display:none;" onclick="abrirModalProcedimento()">➕ Novo</button>
+      </div>
+      <div id="procedimentos-container" style="max-width:1100px; margin: 0 auto; display:flex; flex-direction:column; gap:10px;"></div>
+    </section>
+
+<!-- ==========================================
+         TAB 5: RELATÓRIOS
+         ========================================== -->
+    <section id="tab-relatorios" class="tab-content" style="width: 100%;">
+      <div class="form-box" style="margin-bottom: 30px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+        <div class="form-group" style="flex:1; min-width: 250px;">
+          <label>Mês de Referência</label>
+          <select id="monthSelect">
+            <option value="janeiro2026">Janeiro 2026</option><option value="fevereiro2026">Fevereiro 2026</option><option value="março2026">Março 2026</option><option value="abril2026">Abril 2026</option><option value="maio2026">Maio 2026</option><option value="junho2026">Junho 2026</option><option value="julho2026">Julho 2026</option><option value="agosto2026">Agosto 2026</option><option value="setembro2026">Setembro 2026</option><option value="outubro2026">Outubro 2026</option><option value="novembro2026">Novembro 2026</option><option value="dezembro2026">Dezembro 2026</option>
+          </select>
+        </div>
+        <button class="btn btn-outline" style="width:auto;" onclick="loadCharts()">Buscar Mês</button>
+        <button class="btn btn-primary" style="width:auto; margin-left: auto;" onclick="gerarPlanilha(this)">📑 Gerar Planilha Oficial</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:40px; width:100%; max-width:1000px; margin:0 auto;">
+        <!-- Gráfico 1: Quantidade -->
+        <div style="background:var(--bg-box); padding:25px; border-radius:12px; border:1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+          <h3 style="text-align:center; color:#fff; font-size:1.3rem;">Devoluções por Quantidade</h3>
+          <div id="total_qtd" style="text-align:center; color:var(--primary); font-weight:bold; margin-bottom:15px;">Aguardando busca...</div>
+          <div id="chart_qtd" style="width:100%; height:350px;"></div>
+        </div>
+        
+        <!-- Gráfico 2: Valores -->
+        <div style="background:var(--bg-box); padding:25px; border-radius:12px; border:1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+          <h3 style="text-align:center; color:#fff; font-size:1.3rem;">Devoluções por Valores (R$)</h3>
+          <div id="total_valor" style="text-align:center; color:var(--primary); font-weight:bold; margin-bottom:15px;">Aguardando busca...</div>
+          <div id="chart_valor" style="width:100%; height:350px;"></div>
+        </div>
+        
+        <!-- Gráfico 3: Reversões -->
+        <div style="background:var(--bg-box); padding:25px; border-radius:12px; border:1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+          <h3 style="text-align:center; color:#fff; font-size:1.3rem;">Reversões por Analista</h3>
+          <div id="total_rev" style="text-align:center; color:var(--primary); font-weight:bold; margin-bottom:15px;">Aguardando busca...</div>
+          <div id="chart_rev" style="width:100%; height:350px;"></div>
+          
+          <!-- Lista de Analistas -->
+          <div id="resumo_analistas" style="margin-top:20px; background:var(--bg-input); padding:20px; border-radius:10px; border-left:4px solid var(--primary); display:none;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 6: ADMINISTRAÇÃO (NOVO)
+         ========================================== -->
+    <section id="tab-admin" class="tab-content">
+      
+      <!-- GESTÃO DE USUÁRIOS -->
+      <div class="manage-section" style="margin-top:0;">
+        <div class="manage-header">
+          <h3 style="color:#fff;">👥 Gestão de Usuários e Permissões</h3>
+          <button class="btn btn-primary" style="width:auto;" onclick="abrirModalUsuario()">➕ Novo Usuário</button>
+        </div>
+        <div class="data-list" id="lista-usuarios"></div>
+      </div>
+
+      <!-- GESTÃO DE TRANSPORTADORAS -->
+      <div class="manage-section">
+        <div class="manage-header">
+          <h3 style="color:#fff;">🚚 Transportadoras e E-mails</h3>
+          <button class="btn btn-primary" style="width:auto;" onclick="abrirModalTransportadora()">➕ Nova Transp.</button>
+        </div>
+        <div class="data-list" id="lista-transportadoras"></div>
+      </div>
+
+    </section>
+
+<!-- ==========================================
+     TAB: BARRADOS PLP (MIGRAÇÃO)
+     ========================================== -->
+<section id="tab-plp" class="tab-content">
+  <!-- FORMULÁRIO DE NOVA SOLICITAÇÃO -->
+  <form id="form-plp" class="form-box cols-3" style="margin-bottom: 30px;">
+    <div class="form-group full"><h3 style="color:var(--primary); margin-bottom:0;">+ Nova Solicitação de Barragem</h3></div>
+    <div class="form-group"><label>Nº Ticket</label><input type="text" name="ticket" required></div>
+    <div class="form-group"><label>Nº Nota Fiscal</label><input type="text" name="nf" required></div>
+    <div class="form-group"><label>Transportadora</label><input type="text" name="transp" required></div>
+    <div class="form-group full"><label>Item (SKU / Produto)</label><input type="text" name="item" required></div>
+    <div class="form-group full"><button type="button" class="btn btn-primary" onclick="submitSolicitacaoPLP(this)">Enviar Solicitação</button></div>
+  </form>
+
+  <!-- LISTAGENS -->
+  <div class="manage-section" style="margin-top: 0;">
+    <div class="manage-header">
+      <h3 style="color:#fff;">Minhas Solicitações (Ativas e Histórico)</h3>
+      <button class="btn btn-outline" style="width:auto; padding: 6px 12px;" onclick="carregarDadosPLP()">🔄 Atualizar</button>
+    </div>
+    <div class="table-responsive" style="overflow-x: auto;">
+      <table class="mirror-table">
+        <thead><tr><th>Data</th><th>Ticket</th><th>NF</th><th>Item</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="tb-minhas-plp"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="manage-section">
+    <div class="manage-header">
+      <h3 style="color:#fff;">Consulta Geral (Todos Analistas)</h3>
+      <input type="text" id="filtro-plp" placeholder="Buscar por NF, Ticket, Analista..." onkeyup="renderConsultaPLP()" style="max-width: 300px; padding: 8px; border-radius:6px; background:var(--bg-input); color:#fff; border:1px solid var(--border-focus);">
+    </div>
+    <div class="table-responsive" style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+      <table class="mirror-table">
+        <thead><tr><th>Data</th><th>Analista</th><th>Ticket</th><th>NF</th><th>Transp.</th><th>Status</th><th>Hora Barragem</th></tr></thead>
+        <tbody id="tb-consulta-plp"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+  </div>
+
+  <!-- ==========================================
+       MODAIS 
+       ========================================== -->
+       
+  <!-- Modal Confirmação (Espelho Reembolso) -->
+  <div class="modal-overlay" id="modal-espelho">
+    <div class="modal-content">
+      <h3 style="color:#fff; text-align:center; margin-bottom: 20px;">CONFIRMAR DADOS</h3>
+      <table class="mirror-table" id="mirror-table-body"></table>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button id="btn-processar-unico" class="btn btn-primary" onclick="processarFilaEEmail(this)">VALIDAR E DISPARAR EMAIL</button>
+        <button class="btn btn-outline" style="border-color:var(--border-focus); color:#aaa;" onclick="fecharModal('modal-espelho')">Cancelar Formulário</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Exclusão Genérica -->
+  <div class="modal-overlay" id="modal-exclusao">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
+      <h3 style="color: var(--danger); margin-bottom: 10px;">Atenção</h3>
+      <p style="color: #ccc; margin-bottom: 25px;">Excluir <strong id="delete-texto" style="color:#fff;"></strong>?</p>
+      <div style="display:flex; gap:15px;">
+        <button class="btn btn-outline" style="border-color:var(--border-focus); color:#aaa;" onclick="fecharModal('modal-exclusao')">Cancelar</button>
+        <button class="btn btn-primary" style="background:var(--danger);" id="btn-confirm-delete" onclick="efetivarExclusao()">Sim, Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Usuário -->
+  <div class="modal-overlay" id="modal-usuario">
+    <div class="modal-content">
+      <h3 id="modal-user-title" style="color:#fff; text-align:center; margin-bottom: 20px;">Cadastrar Usuário</h3>
+      <form id="form-usuario">
+        <label>Nome do Usuário</label><input type="text" id="u-nome" required style="margin-bottom:15px;">
+        <label>Senha</label><input type="text" id="u-senha" required style="margin-bottom:15px;">
+        <label>Nível</label>
+        <select id="u-nivel" required style="margin-bottom:20px;">
+          <option value="Analista">Analista (Comum)</option>
+          <option value="Admin">Admin (Acesso Total)</option>
+        </select>
+        
+        <label>Permissões de Telas (Apenas Analistas)</label>
+<div class="chk-group" id="u-acessos">
+  <label class="chk-item"><input type="checkbox" value="tab-reembolso"> Reembolsos</label>
+  <label class="chk-item"><input type="checkbox" value="tab-revertido"> Revertidos</label>
+  <label class="chk-item"><input type="checkbox" value="tab-bloqueio"> Bloqueios</label>
+  <label class="chk-item"><input type="checkbox" value="tab-plp"> Barrados PLP</label> <label class="chk-item"><input type="checkbox" value="tab-procedimentos"> Procedimentos</label>
+  <label class="chk-item"><input type="checkbox" value="tab-relatorios"> Relatórios</label>
+</div>
+
+        <div style="display:flex; gap:15px; margin-top:25px;">
+          <button type="button" class="btn btn-outline" style="border-color:var(--border-focus); color:#aaa;" onclick="fecharModal('modal-usuario')">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="salvarUsuarioJS(this)">Salvar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Transportadora -->
+  <div class="modal-overlay" id="modal-transp">
+    <div class="modal-content">
+      <h3 id="modal-transp-title" style="color:#fff; text-align:center; margin-bottom: 20px;">Transportadora</h3>
+      <form id="form-transp">
+        <input type="hidden" id="t-nome-original">
+        <label>Nome da Transportadora</label><input type="text" id="t-nome" required style="margin-bottom:15px;">
+        <label>E-mails Destino (Separados por vírgula)</label>
+        <textarea id="t-emails" rows="3" required placeholder="exemplo@transp.com.br, sac@transp.com.br" style="margin-bottom:20px;"></textarea>
+        
+        <div style="display:flex; gap:15px;">
+          <button type="button" class="btn btn-outline" style="border-color:var(--border-focus); color:#aaa;" onclick="fecharModal('modal-transp')">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="salvarTransportadoraJS(this)">Salvar Dados</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Procedimento -->
+  <div class="modal-overlay" id="modal-procedimento">
+    <div class="modal-content">
+      <h3 id="modal-proc-title" style="color:#fff; text-align:center; margin-bottom: 20px;">Novo Procedimento</h3>
+      <form id="form-procedimento">
+        <input type="hidden" id="proc-id">
+        <label>Categoria</label>
+        <input type="text" id="proc-categoria" required style="margin-bottom:15px;" placeholder="Ex: Devoluções">
+        
+        <label>Título da Regra/Procedimento</label>
+        <input type="text" id="proc-titulo" required style="margin-bottom:15px;" placeholder="Ex: Regras Básicas de Validação">
+        
+        <label>Conteúdo</label>
+        <div style="margin-bottom:20px; background: var(--bg-input);">
+           <div id="proc-editor"></div>
+        </div>
+        
+        <div style="display:flex; gap:15px;">
+          <button type="button" class="btn btn-outline" style="border-color:var(--border-focus); color:#aaa;" onclick="fecharModal('modal-procedimento')">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="salvarProcedimentoJS(this)">Salvar Procedimento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<div id="toast">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span id="toast-icon">✅</span> <span id="toast-msg">Sucesso!</span>
+    </div>
+    <button id="toast-undo-btn" class="btn-undo" style="display:none;">Desfazer</button>
+  </div>
+
+  <script>
+// ESTADOS GLOBAIS
+    let usuarioLogado = ""; 
+    let usuarioNivel = "Analista";
+    let usuarioAcessos = [];
+    
+    let cachedFormDataReembolso = null;
+    let cachedReversoes = []; 
+    let cachedBarrados = [];
+    let cachedProcedimentos = []; 
+    
+    let deleteConfig = { tipo: null, id: null };
+
+    let dataTableReversoes = null;
+    let pendingDeletions = {};
+
+    function toggleLoading(btn, isLoading, text = "Carregando...") {
+      if (!btn) return;
+      if (isLoading) {
+        btn.dataset.original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span> ${text}`;
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.original || text;
+      }
+    }
+
+    function gerarSkeletonTable(containerId) {
+      document.getElementById(containerId).innerHTML = `
+        <table class="mirror-table" style="border:none;">
+          <tbody>
+            <tr><td class="skeleton"></td><td class="skeleton"></td><td class="skeleton"></td></tr>
+            <tr><td class="skeleton"></td><td class="skeleton"></td><td class="skeleton"></td></tr>
+            <tr><td class="skeleton"></td><td class="skeleton"></td><td class="skeleton"></td></tr>
+          </tbody>
+        </table>`;
+    }
+
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+    });
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.style.display = 'none'; });
+    });
+
+
+
+    // ==========================================
+    // INICIALIZAÇÃO
+    // ==========================================
+    document.addEventListener("DOMContentLoaded", () => {
+      const sessionUser = sessionStorage.getItem("analista_logado");
+      const sessionNivel = sessionStorage.getItem("analista_nivel");
+      const sessionAcessos = sessionStorage.getItem("analista_acessos");
+      
+      if (sessionUser) {
+        setUsuarioLogado(sessionUser, sessionNivel, sessionAcessos);
+      } else {
+        document.getElementById("login-screen").style.display = "flex";
+      }
+
+      document.getElementById("login-pass").addEventListener("keypress", e => { if (e.key === "Enter") executarLogin(); });
+      new TomSelect("#motivo-reembolso", { create: true, placeholder: "Pesquise digitando..." });
+      
+      document.querySelectorAll('.input-money').forEach(input => {
+        input.addEventListener('input', function() {
+          let val = this.value.replace(/\D/g, '');
+          this.value = (parseInt(val || '0', 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        });
+      });
+      google.charts.load('current', { packages: ['corechart'] });
+    });
+
+    // ==========================================
+    // AUTENTICAÇÃO E TABS DINÂMICAS
+    // ==========================================
+    function executarLogin() {
+      const user = document.getElementById("login-user").value.trim();
+      const pass = document.getElementById("login-pass").value.trim();
+      const btn = document.getElementById("btn-login");
+
+      if (!user || !pass) return toast("Preencha usuário e senha.", true);
+      btn.disabled = true; btn.innerText = "Autenticando...";
+      
+      google.script.run
+        .withSuccessHandler(res => {
+          sessionStorage.setItem("analista_logado", res.nome);
+          sessionStorage.setItem("analista_nivel", res.nivel);
+          sessionStorage.setItem("analista_acessos", res.acessos);
+          setUsuarioLogado(res.nome, res.nivel, res.acessos);
+          toast("Login realizado com sucesso!");
+        })
+        .withFailureHandler(err => {
+          btn.disabled = false; btn.innerText = "Acessar Sistema";
+          toast(err.message, true);
+        })
+        .autenticarUsuario(user, pass);
+    }
+
+function setUsuarioLogado(nome, nivel, acessos) {
+  usuarioLogado = nome;
+  usuarioNivel = nivel;
+  
+  let permissoes = acessos || "";
+  if (nivel === "Admin") {
+    // Adicionado "tab-plp" aqui na lista do Admin
+    permissoes = "tab-reembolso,tab-revertido,tab-bloqueio,tab-plp,tab-procedimentos,tab-relatorios,tab-admin";
+  } else if (!permissoes) {
+    // Adicionado "tab-plp" no padrão do Analista caso não haja registro salvo
+    permissoes = "tab-reembolso,tab-revertido,tab-bloqueio,tab-plp,tab-procedimentos";
+  }
+  
+  usuarioAcessos = permissoes.split(",");
+
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("user-bar").style.display = "flex";
+  document.getElementById("nome-logado").innerText = nome;
+  
+  const badge = document.getElementById("badge-nivel");
+  badge.innerText = nivel;
+  badge.style.background = (nivel === "Admin") ? "var(--success)" : "var(--primary)";
+
+  renderTabs();
+  carregarComboTransportadoras();
+}
+
+    // Apenas UMA função renderTabs (removida a duplicidade)
+    function renderTabs() {
+      const nav = document.getElementById("nav-tabs");
+      nav.innerHTML = "";
+      nav.style.display = "flex";
+
+      const tabMap = {
+        "tab-reembolso": "Reembolso",
+        "tab-revertido": "Revertidos",
+        "tab-bloqueio": "Transporte",
+        "tab-plp": "Barrados PLP",
+        "tab-procedimentos": "Procedimentos",
+        "tab-relatorios": "Relatórios",
+        "tab-admin": "Administração"
+      };
+
+      let abasPermitidas = [...usuarioAcessos];
+      let first = true;
+      
+      Object.keys(tabMap).forEach(tabId => {
+        if(abasPermitidas.includes(tabId)) {
+          const btn = document.createElement("button");
+          btn.className = `tab-btn ${first ? 'active' : ''}`;
+          btn.innerText = tabMap[tabId];
+          btn.onclick = () => switchTab(tabId, btn);
+          nav.appendChild(btn);
+          
+          if(first) { 
+            switchTab(tabId, btn); 
+            first = false; 
+          }
+        }
+      });
+    }
+
+    function switchTab(tabId, btnElement) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      const tab = document.getElementById(tabId);
+      if(tab) tab.classList.add('active');
+      if(btnElement) btnElement.classList.add('active');
+      
+      if(tabId === 'tab-revertido') carregarListaReversoes();
+      if(tabId === 'tab-plp') carregarDadosPLP();
+      if(tabId === 'tab-bloqueio') carregarListaBarrados();
+      if(tabId === 'tab-procedimentos') carregarProcedimentos();
+      if(tabId === 'tab-admin') { carregarUsuarios(); carregarTransportadorasList(); }
+    }
+
+    function fazerLogout() { sessionStorage.clear(); location.reload(); }
+    function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
+function toast(msg, isError = false, onUndo = null) {
+      const el = document.getElementById('toast');
+      const undoBtn = document.getElementById('toast-undo-btn');
+      document.getElementById('toast-msg').textContent = msg;
+      document.getElementById('toast-icon').textContent = isError ? '⚠️' : '✅';
+      el.className = isError ? 'error show' : 'show';
+      
+      if(onUndo) {
+        undoBtn.style.display = 'block';
+        undoBtn.onclick = () => { onUndo(); el.className = ''; undoBtn.style.display = 'none'; };
+      } else {
+        undoBtn.style.display = 'none';
+      }
+
+      setTimeout(() => { 
+        el.className = ''; 
+        setTimeout(() => undoBtn.style.display = 'none', 400); 
+      }, onUndo ? 5000 : 3500);
+    }
+    
+    function getFormData(formId) {
+      const form = document.getElementById(formId);
+      if(!form.checkValidity()) { form.reportValidity(); return null; }
+      const data = {};
+      Array.from(form.elements).forEach(el => { if(el.name) data[el.name] = el.value; });
+      return data;
+    }
+
+    // ==========================================
+    // FLUXO REEMBOLSO
+    // ==========================================
+    function prepararUpload(btn) {
+      const data = getFormData('form-reembolso');
+      if(!data) return;
+      btn.disabled = true; btn.innerText = "Processando...";
+      data.valorTotal = parseFloat(data.valorTotal.replace(/\./g, '').replace(',', '.')) || 0;
+      
+      const fileInput = document.getElementById('anexoNf');
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if(file.size > 4000000) { btn.disabled = false; btn.innerText = "Gravar Reembolso"; return toast("Limite de 4MB excedido.", true); }
+        const reader = new FileReader();
+        reader.onload = e => {
+          data.fileBase64 = e.target.result.split(',')[1];
+          data.fileName = file.name; data.mimeType = file.type;
+          submitReembolsoBackend(btn, data);
+        };
+        reader.readAsDataURL(file);
+      } else { submitReembolsoBackend(btn, data); }
+    }
+
+    function submitReembolsoBackend(btn, data) {
+      google.script.run.withSuccessHandler(savedData => {
+        cachedFormDataReembolso = savedData; 
+        document.getElementById('btn-processar-unico').disabled = false;
+        
+        const tbody = document.getElementById('mirror-table-body');
+        tbody.innerHTML = '';
+        for (const key in savedData) {
+          if(['fileBase64', 'fileName', 'mimeType', 'anexoGeradoUrl'].includes(key)) continue;
+          let val = savedData[key];
+          if (key === 'valorTotal') val = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          if (!val) val = "N/A";
+          tbody.innerHTML += `<tr><th>${key}</th><td>${val}</td></tr>`;
+        }
+        btn.disabled = false; btn.innerText = "Gravar Reembolso";
+        document.getElementById('modal-espelho').style.display = 'flex';
+      }).withFailureHandler(err => {
+        btn.disabled = false; btn.innerText = "Gravar Reembolso"; toast(err.message, true);
+      }).salvarFormulario(data, usuarioLogado);
+    }
+
+    function processarFilaEEmail(btn) {
+      btn.disabled = true; btn.innerText = "Enviando E-mail...";
+      google.script.run.withSuccessHandler(msg => { 
+        toast(msg); fecharModal('modal-espelho'); document.getElementById('form-reembolso').reset();
+      }).withFailureHandler(err => {
+        btn.disabled = false; btn.innerText = "VALIDAR E DISPARAR EMAIL"; toast(err.message, true); 
+      }).criarValidarDadosEEnviarEmail(cachedFormDataReembolso, usuarioLogado);
+    }
+
+    // ==========================================
+    // REVERTIDOS
+    // ==========================================
+    function submitRevertido(btn) {
+      const data = getFormData('form-revertido'); if(!data) return;
+      btn.disabled = true; btn.innerText = "Salvando...";
+      data.valor = parseFloat(data.valor.replace(/\./g, '').replace(',', '.')) || 0;
+      
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('form-revertido').reset(); btn.disabled = false; btn.innerText = "Gravar Revertido";
+        toast("Reversão salva!"); carregarListaReversoes(); 
+      }).withFailureHandler(err => { btn.disabled = false; btn.innerText = "Gravar Revertido"; toast(err.message, true); }).salvarRevertido(data, usuarioLogado);
+    }
+
+    function carregarListaReversoes() {
+      const container = document.getElementById('rev-list-container');
+      gerarSkeletonTable('rev-list-container');
+      google.script.run.withSuccessHandler(lista => { cachedReversoes = lista; renderizarReversoes(lista); }).getReversoesAtuais(usuarioLogado); 
+    }
+
+function renderizarReversoes(lista) {
+      const container = document.getElementById('rev-list-container');
+      if(lista.length === 0) { container.innerHTML = '<p style="color:#777;">Nenhuma reversão.</p>'; return; }
+      
+      if(dataTableReversoes) dataTableReversoes.destroy();
+        
+      let html = `<table id="table-reversoes" class="dataTable-table">
+        <thead><tr><th>Data</th><th>Pedido</th><th>Tipo</th><th>Valor</th><th>Ações</th></tr></thead><tbody>`;
+      
+      lista.forEach(i => {
+        html += `<tr id="row-rev-${i.pedido}">
+          <td>${i.dataStr}</td><td><strong>${i.pedido}</strong></td><td>${i.tipo}</td><td style="color:var(--success);">R$ ${i.valor}</td>
+          <td><button class="btn-danger-outline" onclick="abrirModalExclusao('reversao', '${i.pedido}')">Excluir</button></td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+      dataTableReversoes = new simpleDatatables.DataTable("#table-reversoes", { searchable: true, fixedHeight: true });
+    }
+
+    // ==========================================
+    // TRANSPORTES
+    // ==========================================
+    function carregarComboTransportadoras() {
+      google.script.run.withSuccessHandler(lista => {
+        const select = document.getElementById("f-transportadora");
+        select.innerHTML = '<option value="">-- selecione --</option>';
+        lista.forEach(t => { select.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; });
+      }).getTodasTransportadoras();
+    }
+
+function submitBloqueioTransporte(btn) {
+      const form = document.getElementById('form-bloqueio');
+      if(!form.checkValidity()) return form.reportValidity(); // Força a validação do HTML (incluindo o anexo)
+
+      const data = getFormData('form-bloqueio'); if (!data) return;
+
+      const fileInput = document.getElementById('anexoNfRemessa');
+      if (fileInput.files.length === 0) return toast("Anexar a NF de Remessa é obrigatório.", true);
+
+      const file = fileInput.files[0];
+      if(file.size > 4000000) return toast("Limite de 4MB excedido no anexo.", true);
+
+      btn.disabled = true; btn.innerText = "Processando Anexo...";
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        data.fileBase64 = e.target.result.split(',')[1];
+        data.fileName = file.name;
+        data.mimeType = file.type;
+
+        btn.innerText = "Enviando...";
+        google.script.run.withSuccessHandler(msg => {
+          toast(msg); document.getElementById('form-bloqueio').reset(); btn.disabled = false; btn.innerText = "Enviar E-mail de Bloqueio"; carregarListaBarrados();
+        }).withFailureHandler(err => { 
+          toast(err.message, true); btn.disabled = false; btn.innerText = "Enviar E-mail de Bloqueio"; 
+        }).dispararBloqueioTransporte(data, usuarioLogado);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function carregarListaBarrados() {
+      const container = document.getElementById('barrados-list-container');
+      container.innerHTML = '<p style="color:#777;">Sincronizando histórico de e-mails de bloqueio...</p>';
+      google.script.run.withSuccessHandler(lista => {
+        cachedBarrados = lista; 
+        if (lista.length === 0) { container.innerHTML = '<p style="color:#777;">Nenhuma solicitação de bloqueio registrada.</p>'; return; }
+        
+        let html = '';
+        lista.forEach(item => {
+          html += `<div class="data-item" style="border-left-color: #ef4444; flex-direction:column; align-items:flex-start;">
+              <strong style="color: #fff; font-size:0.95rem;">NF: ${item.nf} / Ticket: ${item.ticket}</strong>
+              <span style="color:#aaa; font-size:0.85rem; margin-top:5px;">Transportadora: <b style="color:#ff4c4c;">${item.transportadora}</b> | Analista: <b>${item.analista}</b></span>
+              <small style="color:#777; margin-top:5px;">🕒 ${item.dataStr}</small>
+            </div>`;
+        });
+        container.innerHTML = html;
+      }).carregarHistoricoBarrados();
+    }
+
+    // ==========================================
+    // PROCEDIMENTOS
+    // ==========================================
+function carregarProcedimentos() {
+      const container = document.getElementById('procedimentos-container');
+      container.innerHTML = '<p style="color:#777; text-align:center;">Sincronizando base de conhecimento...</p>';
+      
+      if (usuarioNivel === "Admin") document.getElementById("btn-novo-proc").style.display = "block";
+
+      google.script.run.withSuccessHandler(lista => { 
+        cachedProcedimentos = lista; 
+        let html = '';
+        
+        lista.forEach(proc => {
+          const adminHtml = (usuarioNivel === "Admin") ? `
+            <div class="admin-controls" style="display:flex; gap:10px; margin-top:15px; border-top: 1px dashed var(--border-focus); padding-top:15px;">
+              <button class="btn-outline" style="padding:5px 10px; width:auto;" onclick="editarProcedimento('${proc.id}')">✏️ Editar</button>
+              <button class="btn-danger-outline" onclick="abrirModalExclusao('procedimento', '${proc.id}')">🗑️ Excluir</button>
+            </div>` : '';
+
+          html += `
+            <div class="accordion" style="background:var(--bg-box); border:1px solid var(--border-color); border-radius:8px; overflow:hidden;">
+              <div class="accordion-header" onclick="toggleAccordion(this)" style="background:var(--bg-input); padding:16px 20px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-weight:600;">
+                <span><span style="background:var(--primary); color:white; padding:4px 10px; border-radius:4px; font-size:0.75rem; margin-right:10px;">${proc.categoria}</span> ${proc.titulo}</span>
+                <span class="icon" style="color:#aaa;">+</span>
+              </div>
+              <div class="accordion-body" style="padding:0 20px; max-height:0; overflow:hidden; transition:0.3s ease;">
+                <!-- REMOVIDO O white-space:pre-wrap E ADICIONADA A CLASSE DO QUILL -->
+                <div style="padding:25px 0; color:#ccc; line-height:1.6;" class="proc-conteudo-exibicao"><div class="ql-editor">${proc.conteudo}</div></div>
+                ${adminHtml}
+              </div>
+            </div>`;
+        });
+        
+        container.innerHTML = html || '<p style="color:#777; text-align:center;">Nenhum procedimento encontrado.</p>';
+      }).getProcedimentos();
+    }
+
+    function toggleAccordion(headerEl) {
+      const body = headerEl.nextElementSibling;
+      const icon = headerEl.querySelector('.icon');
+      const isOpen = body.style.maxHeight !== '0px' && body.style.maxHeight !== '';
+      
+      document.querySelectorAll('.accordion-body').forEach(el => el.style.maxHeight = '0px');
+      document.querySelectorAll('.accordion-header .icon').forEach(el => el.innerText = '+');
+
+      if (!isOpen) {
+        body.style.maxHeight = '5000px';
+        icon.innerText = '-';
+      }
+    }
+
+    function filtrarProcedimentos() {
+      const termo = document.getElementById('search-proc').value.toLowerCase().trim();
+      const acordeoes = document.querySelectorAll('#procedimentos-container .accordion');
+      
+      acordeoes.forEach(acc => {
+        const texto = acc.innerText.toLowerCase();
+        acc.style.display = texto.includes(termo) ? "block" : "none";
+      });
+    }
+
+    // ==========================================
+    // ADMINISTRAÇÃO (JS)
+    // ==========================================
+    function carregarUsuarios() {
+      const container = document.getElementById('lista-usuarios');
+      container.innerHTML = '<p style="color:#777;">Carregando...</p>';
+      google.script.run.withSuccessHandler(lista => {
+        container.innerHTML = lista.map(u => `
+          <div class="data-item">
+            <div><strong style="color:#fff;">${u.nome}</strong> - <span style="color:var(--primary);">${u.nivel}</span><br><small style="color:#777;">Acessos: ${u.acessos}</small></div>
+            <div style="display:flex; gap:10px;">
+               <button class="btn-outline" style="padding:5px 10px; width:auto;" onclick="editarUsuario('${u.nome}', '${u.senha}', '${u.nivel}', '${u.acessos}')">Editar</button>
+               <button class="btn-danger-outline" onclick="abrirModalExclusao('usuario', '${u.nome}')">Excluir</button>
+            </div>
+          </div>`).join('');
+      }).getUsuarios(usuarioLogado);
+    }
+
+    function abrirModalUsuario() {
+      document.getElementById('form-usuario').reset();
+      document.getElementById('modal-user-title').innerText = "Novo Usuário";
+      document.getElementById('u-nome').disabled = false;
+      document.getElementById('modal-usuario').style.display = 'flex';
+    }
+
+    function editarUsuario(nome, senha, nivel, acessos) {
+      document.getElementById('u-nome').value = nome;
+      document.getElementById('u-nome').disabled = true;
+      document.getElementById('u-senha').value = senha;
+      document.getElementById('u-nivel').value = nivel;
+      
+      const arrAcessos = acessos.split(',');
+      document.querySelectorAll('#u-acessos input[type="checkbox"]').forEach(chk => {
+        chk.checked = arrAcessos.includes(chk.value);
+      });
+      
+      document.getElementById('modal-user-title').innerText = "Editar Usuário";
+      document.getElementById('modal-usuario').style.display = 'flex';
+    }
+
+    function salvarUsuarioJS(btn) {
+      const form = document.getElementById('form-usuario'); if(!form.checkValidity()) return form.reportValidity();
+      
+      const chks = document.querySelectorAll('#u-acessos input[type="checkbox"]:checked');
+      const acessos = Array.from(chks).map(c => c.value).join(',');
+      
+      const dados = {
+        nome: document.getElementById('u-nome').value,
+        senha: document.getElementById('u-senha').value,
+        nivel: document.getElementById('u-nivel').value,
+        acessos: acessos
+      };
+      
+      btn.disabled = true; btn.innerText = "Salvando...";
+      google.script.run.withSuccessHandler(msg => {
+        toast(msg); fecharModal('modal-usuario'); btn.disabled = false; btn.innerText = "Salvar Usuário"; carregarUsuarios();
+      }).withFailureHandler(err => { toast(err.message, true); btn.disabled = false; btn.innerText = "Salvar Usuário"; }).salvarUsuario(usuarioLogado, dados);
+    }
+
+    function carregarTransportadorasList() {
+      const container = document.getElementById('lista-transportadoras');
+      container.innerHTML = '<p style="color:#777;">Carregando...</p>';
+      google.script.run.withSuccessHandler(lista => {
+        container.innerHTML = lista.map(t => `
+          <div class="data-item">
+            <div><strong style="color:#fff;">${t.nome}</strong><br><small style="color:#aaa;">${t.emails}</small></div>
+            <div style="display:flex; gap:10px;">
+               <button class="btn-outline" style="padding:5px 10px; width:auto;" onclick="editarTransportadora('${t.nome}', '${t.emails}')">Editar</button>
+               <button class="btn-danger-outline" onclick="abrirModalExclusao('transportadora', '${t.nome}')">Excluir</button>
+            </div>
+          </div>`).join('');
+      }).getTodasTransportadoras();
+    }
+
+    function abrirModalTransportadora() {
+      document.getElementById('form-transp').reset();
+      document.getElementById('t-nome-original').value = "";
+      document.getElementById('modal-transp-title').innerText = "Nova Transportadora";
+      document.getElementById('modal-transp').style.display = 'flex';
+    }
+
+    function editarTransportadora(nome, emails) {
+      document.getElementById('t-nome-original').value = nome;
+      document.getElementById('t-nome').value = nome;
+      document.getElementById('t-emails').value = emails;
+      document.getElementById('modal-transp-title').innerText = "Editar Transportadora";
+      document.getElementById('modal-transp').style.display = 'flex';
+    }
+
+    function salvarTransportadoraJS(btn) {
+      const form = document.getElementById('form-transp'); if(!form.checkValidity()) return form.reportValidity();
+      
+      const emailsRaw = document.getElementById('t-emails').value;
+      const arrEmails = emailsRaw.split(',').map(e => e.trim());
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      for(let e of arrEmails) { if(!regex.test(e)) return toast(`E-mail inválido: ${e}`, true); }
+
+      const dados = {
+        nomeOriginal: document.getElementById('t-nome-original').value,
+        nome: document.getElementById('t-nome').value,
+        emails: arrEmails.join(', ')
+      };
+      
+      btn.disabled = true; btn.innerText = "Salvando...";
+      google.script.run.withSuccessHandler(msg => {
+        toast(msg); fecharModal('modal-transp'); btn.disabled = false; btn.innerText = "Salvar Dados"; 
+        carregarTransportadorasList(); carregarComboTransportadoras();
+      }).withFailureHandler(err => { toast(err.message, true); btn.disabled = false; btn.innerText = "Salvar Dados"; }).salvarTransportadora(usuarioLogado, dados);
+    }
+
+    // ==========================================
+    // EXCLUSÃO GENÉRICA
+    // ==========================================
+    function abrirModalExclusao(tipo, idOuNome) {
+      deleteConfig.tipo = tipo; deleteConfig.id = idOuNome;
+      document.getElementById('delete-texto').innerText = idOuNome;
+      document.getElementById('modal-exclusao').style.display = 'flex';
+    }
+
+function efetivarExclusao() {
+      const btn = document.getElementById('btn-confirm-delete');
+      toggleLoading(btn, true, "Excluindo...");
+      const id = deleteConfig.id;
+      fecharModal('modal-exclusao');
+      toggleLoading(btn, false);
+
+      if(deleteConfig.tipo === 'reversao') {
+        const row = document.getElementById('row-rev-' + id);
+        if(row) row.style.display = 'none'; 
+
+        toast("Reversão ocultada. Apagando em 5s...", false, () => {
+          clearTimeout(pendingDeletions[id]);
+          if(row) row.style.display = ''; 
+          toast("Exclusão cancelada!");
+        });
+
+        // Só envia para o backend depois de 5s
+        pendingDeletions[id] = setTimeout(() => {
+          google.script.run
+            .withFailureHandler(err => { if(row) row.style.display = ''; toast(err.message, true); })
+            .deletarReversaoSegura(id, usuarioLogado);
+        }, 5000);
+      } else if(deleteConfig.tipo === 'usuario') {
+        google.script.run.withSuccessHandler(() => { toast("Usuário deletado."); carregarUsuarios(); }).withFailureHandler(err => toast(err.message, true)).deletarUsuario(usuarioLogado, deleteConfig.id);
+      }
+    }
+    // ==========================================
+    // RELATÓRIOS E GRÁFICOS (JS)
+    // ==========================================
+    function loadCharts() {
+      const month = document.getElementById('monthSelect').value;
+      if(!month) return toast("Selecione um mês.", true);
+
+      // GRÁFICO 1: QUANTIDADE
+      google.script.run.withSuccessHandler(data => {
+        if(!data.length) return document.getElementById('chart_qtd').innerHTML = "<p style='color:#777; text-align:center;'>Sem dados para este mês</p>";
+        const total = data.reduce((s, r) => s + r[1], 0);
+        document.getElementById('total_qtd').innerText = `Total: ${total.toLocaleString('pt-BR')} itens`;
+        
+        const dt = google.visualization.arrayToDataTable([['Motivo', 'Qtd'], ...data]);
+        new google.visualization.PieChart(document.getElementById('chart_qtd')).draw(dt, { 
+          backgroundColor: 'transparent', 
+          legend: {textStyle: {color: '#fff'}}, 
+          chartArea: {width: '90%', height: '80%'}, 
+          pieHole: 0.4 
+        });
+      }).getDevolucaoQuantidade(month);
+
+      // GRÁFICO 2: VALORES (Correção da Cor do Google Charts)
+      google.script.run.withSuccessHandler(data => {
+        if(!data.length) return document.getElementById('chart_valor').innerHTML = "<p style='color:#777; text-align:center;'>Sem dados para este mês</p>";
+        const total = data.reduce((s, r) => s + r[1], 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        document.getElementById('total_valor').innerText = `Valor Total: ${total}`;
+        
+        // A CORREÇÃO ESTÁ AQUI: '#ff4c4c' (hexadecimal real) ao invés de 'color: var(--primary)'
+        const dt = google.visualization.arrayToDataTable([
+          ['Motivo', 'Valor', {role:'style'}], 
+          ...data.map(r => [r[0], r[1], '#ff4c4c'])
+        ]);
+        
+        new google.visualization.BarChart(document.getElementById('chart_valor')).draw(dt, { 
+          backgroundColor: 'transparent', 
+          legend: 'none', 
+          hAxis: {textStyle:{color:'#fff'}}, 
+          vAxis: {textStyle:{color:'#fff'}}, 
+          chartArea: {width: '70%'} 
+        });
+      }).getDevolucaoValores(month);
+
+      // GRÁFICO 3: REVERSÕES
+      google.script.run.withSuccessHandler(data => {
+        const divResumo = document.getElementById('resumo_analistas');
+        if(!data.length) {
+          document.getElementById('chart_rev').innerHTML = "<p style='color:#777; text-align:center;'>Sem dados para este mês</p>"; 
+          divResumo.style.display = 'none'; 
+          return;
+        }
+        
+        const agrupado = {}; let totalValGeral = 0;
+        data.forEach(r => { 
+          const nome = String(r[0]).trim(); 
+          const valor = Number(r[2]) || 0; 
+          if(!agrupado[nome]) agrupado[nome] = 0; 
+          agrupado[nome] += valor; 
+          totalValGeral += valor; 
+        });
+        document.getElementById('total_rev').innerText = `Valor Total Revertido: ${totalValGeral.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}`;
+        
+        const chartDataArray = [['Analista', 'Valor Revertido']];
+        for(const [n, v] of Object.entries(agrupado)) { chartDataArray.push([n, v]); }
+        
+        const dt = google.visualization.arrayToDataTable(chartDataArray);
+        new google.visualization.ColumnChart(document.getElementById('chart_rev')).draw(dt, { 
+          backgroundColor: 'transparent', 
+          legend: 'none', 
+          hAxis: {textStyle:{color:'#fff'}}, 
+          vAxis: {textStyle:{color:'#fff'}}, 
+          colors:['#10b981'] 
+        });
+        
+        let htmlLista = '<h4 style="color:#fff; margin-bottom:15px;">Totais por Analista</h4><div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">';
+        for(const [n, v] of Object.entries(agrupado)) { 
+            htmlLista += `
+              <div style="background:var(--bg-box); padding:10px; border-radius:6px; border:1px solid #333; display:flex; justify-content:space-between;">
+                <span style="color:#aaa;">${n}</span> 
+                <strong style="color:var(--success);">${v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</strong>
+              </div>`; 
+        }
+        htmlLista += '</div>'; 
+        divResumo.innerHTML = htmlLista; 
+        divResumo.style.display = 'block';
+        
+      }).getReversoes(month);
+    }
+
+    function gerarPlanilha(btn) {
+      const month = document.getElementById('monthSelect').value;
+      if(!month) return toast("Selecione um mês.", true);
+      
+      btn.disabled = true; 
+      btn.innerText = "⏳ Gerando...";
+      
+      google.script.run.withSuccessHandler(msg => { 
+        toast(msg); 
+        btn.disabled = false; 
+        btn.innerText = "📑 Gerar Planilha Oficial"; 
+      }).withFailureHandler(err => { 
+        toast(err.message, true); 
+        btn.disabled = false; 
+        btn.innerText = "📑 Gerar Planilha Oficial"; 
+      }).gerarRelatorioCancelamentos(month, usuarioLogado);
+    }
+
+function abrirModalProcedimento() {
+      document.getElementById('form-procedimento').reset();
+      document.getElementById('proc-id').value = "";
+      quillProc.root.innerHTML = "";
+      document.getElementById('modal-proc-title').innerText = "Novo Procedimento";
+      document.getElementById('modal-procedimento').style.display = 'flex';
+    }
+
+function editarProcedimento(id) {
+      const proc = cachedProcedimentos.find(p => p.id === id);
+      if(!proc) return;
+      document.getElementById('proc-id').value = proc.id;
+      document.getElementById('proc-categoria').value = proc.categoria;
+      document.getElementById('proc-titulo').value = proc.titulo;
+      quillProc.root.innerHTML = proc.conteudo; // Carrega HTML no editor
+      document.getElementById('modal-proc-title').innerText = "Editar Procedimento";
+      document.getElementById('modal-procedimento').style.display = 'flex';
+    }
+
+function salvarProcedimentoJS(btn) {
+      const form = document.getElementById('form-procedimento'); 
+      if(!form.checkValidity()) return form.reportValidity();
+      
+      const conteudoHtml = quillProc.root.innerHTML;
+      if(conteudoHtml === "<p><br></p>" || !conteudoHtml.trim()) return toast("O conteúdo não pode ficar vazio!", true);
+
+      const dados = {
+        id: document.getElementById('proc-id').value,
+        categoria: document.getElementById('proc-categoria').value,
+        titulo: document.getElementById('proc-titulo').value,
+        conteudo: conteudoHtml // Envia o HTML
+      };
+      
+      btn.disabled = true; btn.innerText = "Salvando...";
+      google.script.run.withSuccessHandler(msg => {
+        toast(msg); fecharModal('modal-procedimento'); btn.disabled = false; btn.innerText = "Salvar Procedimento"; carregarProcedimentos();
+      }).withFailureHandler(err => { toast(err.message, true); btn.disabled = false; btn.innerText = "Salvar Procedimento"; }).salvarProcedimento(dados, usuarioLogado);
+    }
+    function calcularCartao() {
+      const pixInput = document.getElementById('calc-pix').value;
+      
+      // Limpa tudo que não for número e converte para decimal corretamente (seguindo o padrão da sua máscara)
+      const cleanVal = pixInput.replace(/\D/g, '');
+      const pixFloat = parseInt(cleanVal || '0', 10) / 100;
+      
+      if (pixFloat > 0) {
+        // Divide o valor do PIX por 0.85
+        const cartaoFloat = pixFloat / 0.85;
+        // Joga no input já formatado em moeda BRL
+        document.getElementById('calc-cartao').value = cartaoFloat.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      } else {
+        document.getElementById('calc-cartao').value = "R$ 0,00";
+      }
+    }
+
+
+    let quillProc;
+
+    // ADICIONE ESTE BLOCO DENTRO DO document.addEventListener("DOMContentLoaded", () => {
+      const quillOptions = {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'color': [] }, { 'background': [] }],
+            ['image', 'link']
+          ]
+        }
+      };
+      
+      quillProc = new Quill('#proc-editor', quillOptions);
+
+      quillProc.root.addEventListener('paste', function(e) {
+        const clipboardData = e.clipboardData || window.clipboardData;
+        if (!clipboardData || !clipboardData.items) return;
+
+        for (let i = 0; i < clipboardData.items.length; i++) {
+          const item = clipboardData.items[i];
+          if (item.type.indexOf('image') !== -1) {
+            e.preventDefault(); 
+            const file = item.getAsFile();
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+              const img = new Image();
+              img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > 1200) { height = Math.round((height * 1200) / width); width = 1200; }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                const range = quillProc.getSelection(true);
+                
+                quillProc.insertText(range.index, "⏳ Fazendo upload da imagem para a nuvem...", { color: '#ff4c4c', italic: true });
+                quillProc.setSelection(range.index + 43);
+
+                google.script.run
+                  .withFailureHandler(err => {
+                    quillProc.deleteText(range.index, 43);
+                    toast("Erro no upload: " + err.message, true);
+                  })
+                  .withSuccessHandler(urlDrive => {
+                    quillProc.deleteText(range.index, 43);
+                    quillProc.insertEmbed(range.index, 'image', urlDrive);
+                    quillProc.setSelection(range.index + 1);
+                    toast("Imagem salva na nuvem!");
+                  })
+                  .salvarImagemNoDrive(compressedDataUrl);
+              };
+              img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }, false);
+
+let DADOS_PLP_CACHE = [];
+
+function submitSolicitacaoPLP(btn) {
+  const form = document.getElementById('form-plp');
+  if(!form.checkValidity()) return form.reportValidity();
+  
+  const dados = {
+    ticket: form.ticket.value.trim(),
+    nf: form.nf.value.trim(),
+    transportadora: form.transp.value.trim(),
+    item: form.item.value.trim()
+  };
+
+  toggleLoading(btn, true, "Enviando...");
+  google.script.run.withSuccessHandler(msg => {
+    toast(msg); 
+    form.reset(); 
+    toggleLoading(btn, false);
+    carregarDadosPLP();
+  }).withFailureHandler(err => {
+    toast(err.message, true);
+    toggleLoading(btn, false);
+  }).salvarSolicitacaoPLP(dados, usuarioLogado);
+}
+
+function carregarDadosPLP() {
+  document.getElementById('tb-minhas-plp').innerHTML = '<tr><td colspan="6" class="skeleton"></td></tr>';
+  document.getElementById('tb-consulta-plp').innerHTML = '<tr><td colspan="7" class="skeleton"></td></tr>';
+  
+  google.script.run.withSuccessHandler(dados => {
+    DADOS_PLP_CACHE = dados;
+    renderMinhasPLP();
+    renderConsultaPLP();
+  }).buscarDadosPLP(usuarioLogado);
+}
+
+function getBadgePLP(status) {
+  if(status === "PENDENTE") return `<span style="background:rgba(245, 158, 11, 0.2); color:#fbbf24; padding:3px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">PENDENTE</span>`;
+  if(status === "VERIFICADO") return `<span style="background:rgba(6, 182, 212, 0.2); color:#22d3ee; padding:3px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">VERIFICADO</span>`;
+  if(status === "BARRADO") return `<span style="background:rgba(16, 185, 129, 0.2); color:#34d399; padding:3px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">BARRADO</span>`;
+  if(status === "JÁ FOI DESPACHADO") return `<span style="background:rgba(148, 163, 184, 0.2); color:#94a3b8; padding:3px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold;">JÁ FOI</span>`;
+  return status;
+}
+
+function renderMinhasPLP() {
+  try {
+    const nomeLimpo = String(usuarioLogado).trim().toLowerCase();
+    
+    const ativos = DADOS_PLP_CACHE.filter(r => String(getColSeguro(r, "ANALISTA")).trim().toLowerCase() === nomeLimpo && String(getColSeguro(r, "AÇÃO")).trim().toUpperCase() !== "VISTO");
+    const vistos = DADOS_PLP_CACHE.filter(r => String(getColSeguro(r, "ANALISTA")).trim().toLowerCase() === nomeLimpo && String(getColSeguro(r, "AÇÃO")).trim().toUpperCase() === "VISTO");
+    
+    let html = '';
+    const renderRow = (r, isVisto) => {
+      const status = String(getColSeguro(r, "STATUS ATUAL"));
+      const id = getColSeguro(r, "ID");
+      const mesRef = getColSeguro(r, "MES_REF");
+
+      let btnExcluir = (status === "PENDENTE" || status === "VERIFICADO") 
+        ? `<button class="btn-danger-outline" onclick="excluirPLP('${id}', '${mesRef}')">Excluir</button>` : '';
+          
+      let btnVisto = !isVisto 
+        ? `<button style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease; display:flex; align-items:center; gap:5px;" 
+            onmouseover="this.style.background='#10b981'; this.style.color='#fff';" 
+            onmouseout="this.style.background='rgba(16, 185, 129, 0.15)'; this.style.color='#34d399';" 
+            onclick="vistoPLP('${id}', '${mesRef}')">
+            👁️ MARCAR VISTO
+           </button>` 
+        : `<span style="background: rgba(255,255,255,0.05); color: #888; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; border: 1px solid #444; cursor: default; display:flex; align-items:center; gap:5px;">
+            ✔ LIDO
+           </span>`;
+
+      const trClass = isVisto ? 'linha-historico-lido' : '';
+      const trStyle = isVisto ? 'display:none; opacity:0.6;' : '';
+
+      return `<tr class="${trClass}" style="${trStyle}">
+        <td>${getColSeguro(r, "DATA CRIAÇÃO")}</td>
+        <td style="color:#9fc5e8; font-weight:bold;">${getColSeguro(r, "TICKET")}</td>
+        <td style="color:#fff; font-weight:bold;">${getColSeguro(r, "NF")}</td>
+        <td style="max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${getColSeguro(r, "ITEM")}">${getColSeguro(r, "ITEM")}</td>
+        <td>${getBadgePLP(status)}</td>
+        <td style="display:flex; gap:5px; align-items:center;">${btnVisto} ${btnExcluir}</td>
+      </tr>`;
+    };
+
+    // Renderiza primeiro os ativos
+    ativos.forEach(r => html += renderRow(r, false));
+    
+    // Renderiza a barra interativa e depois os lidos
+    if (vistos.length > 0) {
+      html += `
+        <tr id="btn-toggle-historico" style="cursor: pointer; background: var(--bg-input); transition: 0.2s;" onmouseover="this.style.background='var(--border-focus)'" onmouseout="this.style.background='var(--bg-input)'" onclick="toggleHistoricoLido()">
+          <td colspan="6" style="text-align:center; color: var(--primary); font-weight: bold; padding: 15px; letter-spacing: 1px; font-size: 0.9rem;">
+            ▼ EXIBIR HISTÓRICO LIDO (${vistos.length} itens) ▼
+          </td>
+        </tr>
+      `;
+      vistos.forEach(r => html += renderRow(r, true));
+    }
+    
+    document.getElementById('tb-minhas-plp').innerHTML = html || `<tr><td colspan="6" style="text-align:center; color:#777;">Nenhuma solicitação encontrada para o analista(a) ${usuarioLogado}.</td></tr>`;
+  
+  } catch (erro) {
+    console.error("Erro no renderMinhasPLP:", erro);
+    document.getElementById('tb-minhas-plp').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ff4c4c;">Erro ao exibir os dados. Detalhe: ${erro.message}</td></tr>`;
+  }
+}
+
+function toggleHistoricoLido() {
+  const linhas = document.querySelectorAll('.linha-historico-lido');
+  const btnCell = document.querySelector('#btn-toggle-historico td');
+  
+  if (linhas.length === 0 || !btnCell) return;
+
+  const isHidden = linhas[0].style.display === 'none';
+  
+  linhas.forEach(linha => {
+    linha.style.display = isHidden ? 'table-row' : 'none';
+  });
+
+  if (isHidden) {
+    btnCell.innerHTML = `▲ OCULTAR HISTÓRICO LIDO ▲`;
+    btnCell.style.color = "#aaa";
+  } else {
+    btnCell.innerHTML = `▼ EXIBIR HISTÓRICO LIDO (${linhas.length} itens) ▼`;
+    btnCell.style.color = "var(--primary)";
+  }
+}
+
+function getColSeguro(row, colName) {
+  if (!row) return "";
+  for (let key in row) {
+    if (String(key).trim().toUpperCase() === String(colName).trim().toUpperCase()) {
+      return row[key];
+    }
+  }
+  return "";
+}
+
+function renderConsultaPLP() {
+  try {
+    const termo = document.getElementById('filtro-plp').value.toLowerCase().trim();
+    let html = '';
+    
+    DADOS_PLP_CACHE.forEach(r => {
+      const nf = getColSeguro(r, "NF");
+      const ticket = getColSeguro(r, "TICKET");
+      const analista = getColSeguro(r, "ANALISTA");
+      const transp = getColSeguro(r, "TRANSPORTADORA");
+      const item = getColSeguro(r, "ITEM");
+      const status = getColSeguro(r, "STATUS ATUAL");
+
+      const stringBusca = `${nf} ${ticket} ${analista} ${transp} ${item}`.toLowerCase();
+      if(termo && !stringBusca.includes(termo)) return;
+
+      html += `<tr>
+        <td>${getColSeguro(r, "DATA CRIAÇÃO")}</td>
+        <td style="color:#fff;">${analista}</td>
+        <td style="color:#9fc5e8;">${ticket || "-"}</td>
+        <td style="color:#fff; font-weight:bold;">${nf}</td>
+        <td>${transp}</td>
+        <td>${getBadgePLP(status)}</td>
+        <td style="color:#aaa; font-size:0.85rem;">${getColSeguro(r, "HORA BARRAGEM") || "-"}</td>
+      </tr>`;
+    });
+    
+    document.getElementById('tb-consulta-plp').innerHTML = html || '<tr><td colspan="7" style="text-align:center; color:#777;">Nenhum registro encontrado.</td></tr>';
+  
+  } catch (erro) {
+     console.error("Erro no renderConsultaPLP:", erro);
+     document.getElementById('tb-consulta-plp').innerHTML = `<tr><td colspan="7" style="text-align:center; color:#ff4c4c;">Erro na consulta. Detalhe: ${erro.message}</td></tr>`;
+  }
+}
+
+function vistoPLP(id, mesRef) {
+  // Atualiza UI instantaneamente
+  let item = DADOS_PLP_CACHE.find(r => String(r.ID) === String(id) && r.MES_REF === mesRef);
+  if(item) item["AÇÃO"] = "VISTO";
+  renderMinhasPLP();
+  
+  google.script.run.marcarComoVistoPLP(id, mesRef, usuarioLogado);
+}
+
+function excluirPLP(id, mesRef) {
+  if(!confirm("Deseja realmente excluir esta solicitação?")) return;
+  google.script.run.withSuccessHandler(msg => {
+    toast(msg); carregarDadosPLP();
+  }).withFailureHandler(err => toast(err.message, true)).excluirSolicitacaoPLP(id, mesRef, usuarioLogado);
+}
+
+  </script>
+</body>
+</html>
