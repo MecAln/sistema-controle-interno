@@ -74,4 +74,3 @@ SESSÃO DE ADM PARA CONTROLE DE USUARIOS E TRANSPORTADORAS
 
 ---
 Desenvolvido por **Allan Christian** 
-📫 [Me encontre no LinkedIn](COLOQUE-SEU-LINK-DO-LINKEDIN-AQUI)
