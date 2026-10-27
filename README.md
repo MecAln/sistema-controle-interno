@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/Status-Concluído-success)
 ![Tecnologias](https://img.shields.io/badge/Stack-JavaScript_|_Google_Apps_Script_|_HTML_|_CSS-blue)
 
-Um sistema web completo (Single Page Application) desenvolvido para centralizar, automatizar e gerenciar as operações diárias do setor de Atendimento e Garantia (RMA).
+Um sistema web completo (Single Page Application) desenvolvido para centralizar, automatizar e gerenciar as operações diárias dentro do setor de Atendimento na parte de Devoluções e Cancelamentos.
 
 ## 🎯 O Problema
 Antes do sistema, o controle de devoluções, solicitações de reembolso, bloqueios logísticos e a padronização de procedimentos eram feitos de forma descentralizada. Isso gerava retrabalho, falhas de comunicação com transportadoras, dificuldade na extração de relatórios e falta de rastreabilidade das ações dos analistas.
